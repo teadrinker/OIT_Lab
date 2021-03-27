@@ -1,4 +1,6 @@
-﻿Shader "Hidden/OIT/Depth Peeling/Final Blended" {
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Hidden/OIT/Depth Peeling/Final Blended" {
 	Properties {
 		_MainTex ("Main Tex", 2D) = "white" {}
 	}
@@ -25,7 +27,7 @@
 			
 			v2f vert(a2v v) {
 				v2f o;
-				o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+				o.pos = UnityObjectToClipPos(v.vertex);
 				o.uv = v.texcoord;
 				return o;
 			}
@@ -58,7 +60,7 @@
 			
 			v2f vert(a2v v) {
 				v2f o;
-				o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+				o.pos = UnityObjectToClipPos(v.vertex);
 				o.uv = v.texcoord;			
 				return o;
 			}
