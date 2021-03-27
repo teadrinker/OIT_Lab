@@ -1,6 +1,13 @@
-## From https://github.com/candycat1992/OIT_Lab
 
-# Introduction
+## Weighted Blended Order-Independent Transparency
+
+**For the Weighted Blended method, I have added a MRT shader which combines Accumulation and Revealage into a single pass.**
+
+**Forked from https://github.com/candycat1992/OIT_Lab**
+
+---
+
+## Introduction
 
 This project implements several OIT (Order-independent Transparent) methods in Unity.
 
