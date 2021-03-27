@@ -14,6 +14,8 @@ public class WeightedBlendedManager : MonoBehaviour {
     public Shader blendShader = null;
     public TransparentMode transparentMode = TransparentMode.ODT;
     public WeightFunction weightFunction = WeightFunction.Weight0;
+    public Shader accumulateAndRevealageMRTShader = null;
+    public bool UseMRT = false;
     #endregion
 
     #region Private params
@@ -101,29 +103,55 @@ public class WeightedBlendedManager : MonoBehaviour {
             m_transparentCamera.cullingMask = ~(1 << LayerMask.NameToLayer("Transparent"));
             m_transparentCamera.Render();
 
-            // Clear accumTexture to float4(0)
-            m_transparentCamera.targetTexture = m_accumTex;
-            m_transparentCamera.backgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
-            m_transparentCamera.clearFlags = CameraClearFlags.SolidColor;
-            m_transparentCamera.cullingMask = 0;
-            m_transparentCamera.Render();
-            // Render accumTexture
-            m_transparentCamera.SetTargetBuffers(m_accumTex.colorBuffer, m_opaqueTex.depthBuffer);
-            m_transparentCamera.clearFlags = CameraClearFlags.Nothing;
-            m_transparentCamera.cullingMask = 1 << LayerMask.NameToLayer("Transparent");
-            m_transparentCamera.RenderWithShader(accumulateShader, null);
+            if(UseMRT)
+			{
+                // Martin Eklund 2021
+                // Render accumTexture and revealageTex in a single pass
 
-            // Clear revealageTex to float4(1)
-            m_transparentCamera.targetTexture = m_revealageTex;
-            m_transparentCamera.backgroundColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
-            m_transparentCamera.clearFlags = CameraClearFlags.SolidColor;
-            m_transparentCamera.cullingMask = 0;
-            m_transparentCamera.Render();
-            // Render revealageTex
-            m_transparentCamera.SetTargetBuffers(m_revealageTex.colorBuffer, m_opaqueTex.depthBuffer);
-            m_transparentCamera.clearFlags = CameraClearFlags.Nothing;
-            m_transparentCamera.cullingMask = 1 << LayerMask.NameToLayer("Transparent");
-            m_transparentCamera.RenderWithShader(revealageShader, null);
+                // Clear accumTexture to float4(0)
+                m_transparentCamera.targetTexture = m_accumTex;
+                m_transparentCamera.backgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
+                m_transparentCamera.clearFlags = CameraClearFlags.SolidColor;
+                m_transparentCamera.cullingMask = 0;
+                m_transparentCamera.Render();
+
+                // Clear revealageTex to float4(1)
+                m_transparentCamera.targetTexture = m_revealageTex;
+                m_transparentCamera.backgroundColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+                m_transparentCamera.Render();
+
+                // Render Using MRT (Multiple Render Targets)
+                m_transparentCamera.SetTargetBuffers(new RenderBuffer[] { m_accumTex.colorBuffer, m_revealageTex.colorBuffer }, m_opaqueTex.depthBuffer);
+                m_transparentCamera.clearFlags = CameraClearFlags.Nothing;
+                m_transparentCamera.cullingMask = 1 << LayerMask.NameToLayer("Transparent");
+                m_transparentCamera.RenderWithShader(accumulateAndRevealageMRTShader, null);
+            }
+            else
+			{
+                // Clear accumTexture to float4(0)
+                m_transparentCamera.targetTexture = m_accumTex;
+                m_transparentCamera.backgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
+                m_transparentCamera.clearFlags = CameraClearFlags.SolidColor;
+                m_transparentCamera.cullingMask = 0;
+                m_transparentCamera.Render();
+                // Render accumTexture
+                m_transparentCamera.SetTargetBuffers(m_accumTex.colorBuffer, m_opaqueTex.depthBuffer);
+                m_transparentCamera.clearFlags = CameraClearFlags.Nothing;
+                m_transparentCamera.cullingMask = 1 << LayerMask.NameToLayer("Transparent");
+                m_transparentCamera.RenderWithShader(accumulateShader, null);
+
+                // Clear revealageTex to float4(1)
+                m_transparentCamera.targetTexture = m_revealageTex;
+                m_transparentCamera.backgroundColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+                m_transparentCamera.clearFlags = CameraClearFlags.SolidColor;
+                m_transparentCamera.cullingMask = 0;
+                m_transparentCamera.Render();
+                // Render revealageTex
+                m_transparentCamera.SetTargetBuffers(m_revealageTex.colorBuffer, m_opaqueTex.depthBuffer);
+                m_transparentCamera.clearFlags = CameraClearFlags.Nothing;
+                m_transparentCamera.cullingMask = 1 << LayerMask.NameToLayer("Transparent");
+                m_transparentCamera.RenderWithShader(revealageShader, null);
+			}
 
             m_blendMat.SetTexture("_AccumTex", m_accumTex);
             m_blendMat.SetTexture("_RevealageTex", m_revealageTex);
